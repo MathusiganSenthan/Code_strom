@@ -1,0 +1,656 @@
+2025-08-13 18:03:26,031 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:03:26,032 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:03:26,064 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:05:15,074 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:05:15,076 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:05:15,107 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:05:15,148 - app - ERROR - Traceback (most recent call last):
+  File "C:\Users\krsna\OneDrive\Desktop\py project\Yarl_it\app.py", line 53, in startup_event
+    workflow = create_workflow()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\krsna\OneDrive\Desktop\py project\Yarl_it\agents\workflow.py", line 254, in create_workflow
+    workflow = StateGraph(
+               ^^^^^^^^^^^
+  File "C:\Users\krsna\AppData\Local\Programs\Python\Python312\Lib\site-packages\langgraph\graph\state.py", line 237, in __init__
+    self._add_schema(self.state_schema)
+  File "C:\Users\krsna\AppData\Local\Programs\Python\Python312\Lib\site-packages\langgraph\graph\state.py", line 248, in _add_schema
+    if schema not in self.schemas:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'dict'
+
+2025-08-13 18:05:15,308 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:05:15,310 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:05:15,339 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:05:15,373 - app - ERROR - Traceback (most recent call last):
+  File "C:\Users\krsna\OneDrive\Desktop\py project\Yarl_it\app.py", line 53, in startup_event
+    workflow = create_workflow()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\krsna\OneDrive\Desktop\py project\Yarl_it\agents\workflow.py", line 254, in create_workflow
+    workflow = StateGraph(
+               ^^^^^^^^^^^
+  File "C:\Users\krsna\AppData\Local\Programs\Python\Python312\Lib\site-packages\langgraph\graph\state.py", line 237, in __init__
+    self._add_schema(self.state_schema)
+  File "C:\Users\krsna\AppData\Local\Programs\Python\Python312\Lib\site-packages\langgraph\graph\state.py", line 248, in _add_schema
+    if schema not in self.schemas:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'dict'
+
+2025-08-13 18:17:11,544 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:17:11,545 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:17:11,572 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:17:11,601 - app - ERROR - Traceback (most recent call last):
+  File "C:\Users\krsna\OneDrive\Desktop\py project\Yarl_it\app.py", line 53, in startup_event
+    workflow = create_workflow()
+               ^^^^^^^^^^^^^^^^^
+  File "C:\Users\krsna\OneDrive\Desktop\py project\Yarl_it\agents\workflow.py", line 254, in create_workflow
+    workflow = StateGraph(
+               ^^^^^^^^^^^
+  File "C:\Users\krsna\AppData\Local\Programs\Python\Python312\Lib\site-packages\langgraph\graph\state.py", line 237, in __init__
+    self._add_schema(self.state_schema)
+  File "C:\Users\krsna\AppData\Local\Programs\Python\Python312\Lib\site-packages\langgraph\graph\state.py", line 248, in _add_schema
+    if schema not in self.schemas:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'dict'
+
+2025-08-13 18:18:21,626 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:18:21,627 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:18:21,658 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:18:43,028 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:18:43,029 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:18:43,059 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:04,330 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:19:04,331 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:04,363 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:16,705 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:19:16,706 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:16,741 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:29,722 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:19:29,723 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:29,755 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:42,649 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:19:42,650 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:42,682 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:56,652 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:19:56,653 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:19:56,719 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:09,603 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:20:09,605 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:09,632 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:22,864 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:20:22,865 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:22,930 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:35,434 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:20:35,436 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:35,463 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:47,943 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:20:47,944 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:20:47,979 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:21:01,545 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 18:21:01,546 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:21:01,579 - langchain_google_genai.chat_models - WARNING - Unexpected argument 'request_timeout' provided to ChatGoogleGenerativeAI. Did you mean: 'timeout'?
+2025-08-13 18:21:13,876 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:27:24,202 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:48:09,379 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:54:26,598 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:55:18,711 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:58:32,964 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:58:53,241 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:58:53,317 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:58:53,318 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 22:58:59,192 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:58:59,265 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:58:59,265 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 22:59:27,806 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:59:27,808 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:59:28,014 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:59:28,014 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 22:59:28,016 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:59:28,016 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 22:59:42,334 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:59:42,422 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:59:42,422 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 22:59:46,472 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:59:46,582 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:59:46,584 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 22:59:57,936 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 22:59:58,033 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 22:59:58,034 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 23:00:00,480 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 23:00:00,551 - app - INFO - [SUCCESS] Workflow initialized successfully
+2025-08-13 23:00:00,552 - app - INFO - [READY] AI Legal Document Analyzer is ready!
+2025-08-13 23:06:05,036 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 23:06:05,038 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 23:12:37,204 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-13 23:12:37,205 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-14 18:12:21,557 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-14 18:13:38,066 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 21
+}
+].
+2025-08-14 18:13:39,286 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 2.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 20
+}
+].
+2025-08-14 18:13:40,475 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 4.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 19
+}
+].
+2025-08-14 18:13:41,739 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 4.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 17
+}
+].
+2025-08-14 18:13:44,943 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 8.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 14
+}
+].
+2025-08-14 18:13:46,142 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 8.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 13
+}
+].
+2025-08-14 18:13:53,348 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 16.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 6
+}
+].
+2025-08-14 18:13:54,545 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 16.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 5
+}
+].
+2025-08-14 18:14:09,758 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 32.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 49
+}
+].
+2025-08-14 18:14:10,989 - langchain_google_genai.chat_models - WARNING - Retrying langchain_google_genai.chat_models._chat_with_retry.<locals>._chat_with_retry in 32.0 seconds as it raised ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 48
+}
+].
+2025-08-14 18:14:42,165 - agents.workflow - ERROR - Risk Analyzer error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 17
+}
+]
+2025-08-14 18:14:43,413 - agents.workflow - ERROR - Summarizer error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. [violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-1.5-pro"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, retry_delay {
+  seconds: 16
+}
+]
+2025-08-14 18:14:52,485 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-14 18:15:17,190 - app - INFO - Initializing AI Legal Document Analyzer...
+2025-08-14 18:18:33,434 - app - INFO - Initializing AI Legal Document Analyzer...
