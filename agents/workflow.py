@@ -88,19 +88,19 @@ class GraphState(TypedDict):
 
 class ImprovedLegalAnalyzer:
     def __init__(self):
-        # Enhanced model configuration with dynamic selection
+        # Enhanced model configuration with higher token limits for large documents
         self.pro_llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash-lite",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0.1,
-            max_output_tokens=4096
+            max_output_tokens=8192  # Increased for detailed analysis
         )
         
         self.flash_llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash-lite",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0.1,
-            max_output_tokens=2048
+            max_output_tokens=4096  # Increased for better responses
         )
         
         # Performance tracking for real-time optimization
@@ -125,7 +125,19 @@ class ImprovedLegalAnalyzer:
         
     def _create_chain(self, prompt, schema, llm):
         """Create a chain with better error handling."""
-        return prompt | llm.with_structured_output(schema, include_raw=True)
+        try:
+            return prompt | llm.with_structured_output(
+                schema, 
+                include_raw=True,
+                method="function_calling"
+            )
+        except Exception as e:
+            logger.warning(f"Function calling failed, falling back to JSON mode: {e}")
+            return prompt | llm.with_structured_output(
+                schema, 
+                include_raw=True,
+                method="json_mode"
+            )
 
     # ============================================================================
     # DYNAMIC SCALING IMPLEMENTATION (10/10)
@@ -459,8 +471,8 @@ class ImprovedLegalAnalyzer:
                     "completed_agents": []
                 }
             
-            # Smart text truncation for preprocessing
-            max_length = 15000  # Increased limit for better context
+            # Smart text truncation for preprocessing - dramatically increased for large documents
+            max_length = 100000  # Increased to handle very large documents (was 60000)
             if len(document_text) > max_length:
                 # Keep beginning and end of document for context
                 half_length = max_length // 2
@@ -569,6 +581,24 @@ class ImprovedLegalAnalyzer:
                 
                 execution_time = time.time() - agent_start
                 
+                # Validate result and handle parsing errors
+                if hasattr(result, 'parsed') and result.parsed is None:
+                    logger.warning(f"⚠️ {agent_name}: Parsing failed, attempting fallback")
+                    # Try to extract meaningful data from raw response
+                    if hasattr(result, 'raw') and result.raw:
+                        result = self._create_fallback_result(agent_name, result.raw)
+                elif hasattr(result, 'raw') and hasattr(result.raw, 'tool_calls') and result.raw.tool_calls:
+                    # Handle case where we have tool calls but no parsed result
+                    logger.info(f"🔧 {agent_name}: Extracting from tool calls")
+                    try:
+                        tool_call = result.raw.tool_calls[0]
+                        if hasattr(tool_call, 'args') and tool_call.args:
+                            result.parsed = tool_call.args
+                            logger.info(f"✅ {agent_name}: Successfully extracted from tool calls")
+                    except Exception as e:
+                        logger.warning(f"⚠️ {agent_name}: Tool call extraction failed: {e}")
+                        result = self._create_fallback_result(agent_name, result.raw)
+                
                 # Calculate quality score based on result completeness
                 quality_score = self._calculate_quality_score_simple(result, agent_name)
                 success = True
@@ -586,12 +616,12 @@ class ImprovedLegalAnalyzer:
                 logger.error(f"❌ {agent_name}: Failed after {execution_time:.2f}s - {str(e)}")
                 return agent_name, self._get_fallback_result(agent_name)
 
-        # Prepare optimized text chunks
+        # Prepare optimized text chunks with very large limits for comprehensive analysis
         text_chunks = {
-            "summarizer": self._prepare_text_for_agent(text, "summary", 12000),
-            "risk_analyzer": self._prepare_text_for_agent(text, "risk", 12000),
-            "highlighter": self._prepare_text_for_agent(text, "highlights", 10000),
-            "confidence": self._prepare_text_for_agent(text, "confidence", 8000)
+            "summarizer": self._prepare_text_for_agent(text, "summary", 80000),
+            "risk_analyzer": self._prepare_text_for_agent(text, "risk", 80000),
+            "highlighter": self._prepare_text_for_agent(text, "highlights", 70000),
+            "confidence": self._prepare_text_for_agent(text, "confidence", 60000)
         }
 
         # Execute agents in parallel with dynamic worker optimization
@@ -689,25 +719,95 @@ class ImprovedLegalAnalyzer:
                 
         return min(score, 1.0)
 
+    def _create_fallback_result(self, agent_name: str, raw_response) -> Dict[str, Any]:
+        """Create fallback result when parsing fails."""
+        try:
+            # Extract text content from raw response
+            content = ""
+            if hasattr(raw_response, 'content'):
+                content = raw_response.content
+            elif hasattr(raw_response, 'text'):
+                content = raw_response.text
+            else:
+                content = str(raw_response)
+            
+            # Create minimal valid structure based on agent type
+            if agent_name == "confidence":
+                return {
+                    "raw": raw_response,
+                    "parsed": {
+                        "overall_confidence": 50.0,
+                        "document_clarity": 50.0,
+                        "well_understood_sections": ["Basic document structure identified"],
+                        "unclear_sections": ["Analysis incomplete due to parsing error"],
+                        "missing_information": ["Full analysis unavailable"],
+                        "legal_consultation_recommended": True,
+                        "consultation_reasons": ["Technical analysis error - manual review recommended"]
+                    },
+                    "parsing_error": "Function call malformed, using fallback"
+                }
+            elif agent_name == "highlighter":
+                return {
+                    "raw": raw_response,
+                    "parsed": {
+                        "termination_rights": [],
+                        "negotiable_terms": [],
+                        "financial_obligations": [],
+                        "key_restrictions": [],
+                        "critical_deadlines": [],
+                        "auto_renewal_clause": "Analysis incomplete - manual review required",
+                        "action_items": ["Review document manually due to parsing error"]
+                    },
+                    "parsing_error": "Function call malformed, using fallback"
+                }
+            else:
+                return {
+                    "raw": raw_response,
+                    "parsed": None,
+                    "parsing_error": f"Agent {agent_name} parsing failed"
+                }
+                
+        except Exception as e:
+            logger.error(f"Fallback creation failed for {agent_name}: {e}")
+            return {
+                "raw": raw_response,
+                "parsed": None,
+                "parsing_error": f"Complete fallback failure: {str(e)}"
+            }
+
     def _prepare_text_for_agent(self, text: str, agent_type: str, max_length: int) -> str:
         """Prepare optimized text chunks for different agent types."""
         if len(text) <= max_length:
             return text
         
-        if agent_type == "summary":
-            # For summary, prioritize beginning and structure
-            return text[:max_length * 3//4] + "\n\n[...truncated...]\n\n" + text[-max_length//4:]
-        elif agent_type == "risk":
-            # For risk, focus on terms, conditions, and penalties
-            # Try to find risk-related sections
-            return self._extract_risk_sections(text, max_length)
-        elif agent_type == "highlights":
-            # For highlights, focus on dates, numbers, and key terms
-            return self._extract_highlight_sections(text, max_length)
+        # For very large documents, use more intelligent truncation
+        if len(text) > 50000:  # Large document strategy
+            if agent_type == "summary":
+                # For summary, take more from beginning (contract structure)
+                beginning = int(max_length * 0.7)
+                ending = max_length - beginning
+                return text[:beginning] + "\n\n[...middle sections truncated...]\n\n" + text[-ending:]
+            elif agent_type == "risk":
+                # For risk, focus on terms, conditions, and penalties
+                return self._extract_risk_sections(text, max_length)
+            elif agent_type == "highlights":
+                # For highlights, focus on dates, numbers, and key terms
+                return self._extract_highlight_sections(text, max_length)
+            else:
+                # Confidence agent - balanced approach
+                half = max_length // 2
+                return text[:half] + "\n\n[...truncated for analysis...]\n\n" + text[-half:]
         else:
-            # Default: balanced beginning and end
-            half = max_length // 2
-            return text[:half] + "\n\n[...truncated...]\n\n" + text[-half:]
+            # Standard approach for smaller documents
+            if agent_type == "summary":
+                return text[:max_length * 3//4] + "\n\n[...truncated...]\n\n" + text[-max_length//4:]
+            elif agent_type == "risk":
+                return self._extract_risk_sections(text, max_length)
+            elif agent_type == "highlights":
+                return self._extract_highlight_sections(text, max_length)
+            else:
+                half = max_length // 2
+                return text[:half] + "\n\n[...truncated...]\n\n" + text[-half:]
     
     def _extract_risk_sections(self, text: str, max_length: int) -> str:
         """Extract sections likely to contain risk-related information."""
@@ -880,24 +980,84 @@ class ImprovedLegalAnalyzer:
             errors = state.get("processing_errors", [])
             execution_time = state.get("execution_time", 0)
             
-            # Check if we have meaningful results
+            # Check if we have meaningful results - updated for new structure with better debugging
+            logger.info(f"🔍 Coordinator debugging - summary type: {type(summary)}")
+            logger.info(f"🔍 Coordinator debugging - summary keys: {summary.keys() if isinstance(summary, dict) else 'Not a dict'}")
+            
+            # Handle both dict and direct Pydantic object cases
+            if isinstance(summary, dict):
+                summary_parsed = summary.get("parsed", {})
+                has_summary = bool(summary_parsed.get("overview") if isinstance(summary_parsed, dict) else getattr(summary_parsed, 'overview', None))
+            else:
+                # Direct Pydantic object
+                has_summary = bool(getattr(summary, 'overview', None))
+                
             has_meaningful_data = (
-                bool(summary.get("overview")) and 
-                len(summary.get("overview", "")) > 50 and
-                "analysis incomplete" not in summary.get("overview", "").lower()
+                has_summary and 
+                len(str(summary_parsed.get("overview", "") if isinstance(summary, dict) and isinstance(summary_parsed, dict) else getattr(summary, 'overview', ''))) > 50
             )
+            
+            # Additional check: if we have parsed data from multiple agents, consider it successful
+            agents_with_parsed_data = 0
+            
+            # Count successful agents more robustly
+            if isinstance(summary, dict) and summary.get("parsed"):
+                agents_with_parsed_data += 1
+            elif hasattr(summary, 'overview'):
+                agents_with_parsed_data += 1
+                
+            if isinstance(risk, dict) and risk.get("parsed"):
+                agents_with_parsed_data += 1
+            elif hasattr(risk, 'overall_risk_level'):
+                agents_with_parsed_data += 1
+                
+            if isinstance(highlights, dict) and highlights.get("parsed"):
+                agents_with_parsed_data += 1
+            elif hasattr(highlights, 'critical_deadlines'):
+                agents_with_parsed_data += 1
+                
+            if isinstance(confidence, dict) and confidence.get("parsed"):
+                agents_with_parsed_data += 1
+            elif hasattr(confidence, 'overall_confidence'):
+                agents_with_parsed_data += 1
+            
+            logger.info(f"🔍 Coordinator debugging - agents_with_parsed_data: {agents_with_parsed_data}")
+            
+            # If we have 3+ agents with parsed data, consider it successful
+            if agents_with_parsed_data >= 3:
+                has_meaningful_data = True
+                logger.info(f"✅ Coordinator: Using normal report (3+ agents successful)")
+            else:
+                logger.warning(f"⚠️ Coordinator: Using error report (only {agents_with_parsed_data} agents successful)")
             
             if not has_meaningful_data:
                 # Generate error report
                 final_output = self._generate_error_report(errors, state)
             else:
-                # Generate normal report with performance info
+                # Generate normal report with performance info - fix data extraction
                 chain = COORDINATOR_PROMPT | self.pro_llm
+                
+                # Extract parsed data safely
+                summary_data = summary.get("parsed", {}) if isinstance(summary, dict) else summary
+                risk_data = risk.get("parsed", {}) if isinstance(risk, dict) else risk
+                highlights_data = highlights.get("parsed", {}) if isinstance(highlights, dict) else highlights
+                confidence_data = confidence.get("parsed", {}) if isinstance(confidence, dict) else confidence
+                
+                # Convert Pydantic objects to dicts for JSON serialization
+                if hasattr(summary_data, '__dict__'):
+                    summary_data = summary_data.__dict__
+                if hasattr(risk_data, '__dict__'):
+                    risk_data = risk_data.__dict__
+                if hasattr(highlights_data, '__dict__'):
+                    highlights_data = highlights_data.__dict__
+                if hasattr(confidence_data, '__dict__'):
+                    confidence_data = confidence_data.__dict__
+                
                 result = chain.invoke({
-                    "summary": json.dumps(summary, indent=2),
-                    "risk_analysis": json.dumps(risk, indent=2),
-                    "highlights": json.dumps(highlights, indent=2),
-                    "confidence": json.dumps(confidence, indent=2),
+                    "summary": json.dumps(summary_data, indent=2, default=str),
+                    "risk_analysis": json.dumps(risk_data, indent=2, default=str),
+                    "highlights": json.dumps(highlights_data, indent=2, default=str),
+                    "confidence": json.dumps(confidence_data, indent=2, default=str),
                     "execution_time": execution_time
                 })
                 final_output = result.content

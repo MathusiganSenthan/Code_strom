@@ -24,8 +24,8 @@ class Summary(BaseModel):
     overview: str = Field(description="Clear, concise overview in plain language")
     key_parties: List[str] = Field(description="Names/roles of key parties involved")
     main_purpose: str = Field(description="Primary purpose of the document")
-    obligations_summary: Dict[str, List[str]] = Field(description="Key obligations by party")
-    duration_and_dates: Dict[str, str] = Field(description="Important dates and durations")
+    obligations_summary: str = Field(description="Key obligations summary in plain language")
+    duration_and_dates: str = Field(description="Important dates and durations in plain language")
     termination_conditions: List[str] = Field(description="How the agreement can be terminated")
 
 class RiskAssessment(BaseModel):
@@ -41,9 +41,9 @@ class RiskAssessment(BaseModel):
 
 class KeyHighlights(BaseModel):
     """Important document highlights."""
-    critical_deadlines: List[Dict[str, str]] = Field(description="Important dates with descriptions")
-    financial_obligations: List[Dict[str, str]] = Field(description="Financial commitments and amounts")
-    auto_renewal_clause: Optional[Dict[str, str]] = Field(description="Auto-renewal details if present")
+    critical_deadlines: List[str] = Field(description="Important dates and deadlines")
+    financial_obligations: List[str] = Field(description="Financial commitments and amounts")
+    auto_renewal_clause: str = Field(description="Auto-renewal details if present, or 'None' if not applicable")
     termination_rights: List[str] = Field(description="Rights to terminate the agreement")
     key_restrictions: List[str] = Field(description="Important restrictions or limitations")
     action_items: List[str] = Field(description="Required actions for the user")
