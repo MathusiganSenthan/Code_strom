@@ -1,6 +1,7 @@
 import asyncio
 from typing import Dict, Any, List, TypedDict, Optional, Tuple
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from agents.schemas import Summary, RiskAssessment, KeyHighlights, ConfidenceAssessment
 from agents.prompts import *
@@ -10,6 +11,7 @@ import json
 import time
 import statistics
 import re
+import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from dataclasses import dataclass, field
@@ -67,6 +69,8 @@ class CrossAgentInsight:
 # Define the enhanced state structure for LangGraph
 class GraphState(TypedDict):
     document_text: str
+    pdf_content: Optional[str]  # Base64 encoded PDF content for direct processing
+    processing_mode: str  # "direct_pdf" or "text_extraction"
     preprocessed_text: str
     summary_result: Dict[str, Any]
     risk_result: Dict[str, Any]
@@ -90,7 +94,7 @@ class ImprovedLegalAnalyzer:
     def __init__(self):
         # Enhanced model configuration with higher token limits for large documents
         self.pro_llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-lite",
+            model="gemini-2.5-flash",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0.1,
             max_output_tokens=8192  # Increased for detailed analysis
@@ -128,16 +132,40 @@ class ImprovedLegalAnalyzer:
         try:
             return prompt | llm.with_structured_output(
                 schema, 
-                include_raw=True,
-                method="function_calling"
+                include_raw=True
             )
         except Exception as e:
-            logger.warning(f"Function calling failed, falling back to JSON mode: {e}")
-            return prompt | llm.with_structured_output(
-                schema, 
-                include_raw=True,
-                method="json_mode"
-            )
+            logger.warning(f"Structured output failed, falling back to basic LLM: {e}")
+            return prompt | llm
+    
+    def _create_pdf_aware_chain(self, prompt, schema, llm):
+        """Create a chain that can handle PDF content directly."""
+        def pdf_chain(input_data):
+            # Check if we have PDF content
+            if isinstance(input_data, dict) and "pdf_content" in input_data:
+                # Create message with PDF file content
+                message = HumanMessage(
+                    content=[
+                        {
+                            "type": "text",
+                            "text": prompt.format(**input_data)
+                        },
+                        {
+                            "type": "file",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "application/pdf",
+                                "data": input_data["pdf_content"]
+                            }
+                        }
+                    ]
+                )
+                return llm.invoke([message])
+            else:
+                # Fallback to regular text processing
+                return (prompt | llm).invoke(input_data)
+        
+        return pdf_chain
 
     # ============================================================================
     # DYNAMIC SCALING IMPLEMENTATION (10/10)
@@ -458,9 +486,114 @@ class ImprovedLegalAnalyzer:
             
         return report
 
-    def roughter_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Improved preprocessing with better text handling."""
+    def pdf_processor_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Process PDF - either extract text or prepare for direct processing."""
         try:
+            processing_mode = state.get("processing_mode", "text_extraction")
+            
+            if processing_mode == "direct_pdf":
+                # For direct PDF processing, just validate PDF content and pass it through
+                pdf_content = state.get("pdf_content", "")
+                if not pdf_content:
+                    logger.error("❌ PDF Processor: No PDF content provided for direct processing")
+                    state["processing_errors"] = state.get("processing_errors", [])
+                    state["processing_errors"].append("No PDF content provided for direct processing")
+                    return state
+                
+                logger.info("🔧 PDF Processor: PDF ready for direct processing (skipping text extraction)")
+                # Don't extract text - let master agent handle direct PDF processing
+                state["document_metadata"] = state.get("document_metadata", {})
+                state["document_metadata"]["pdf_processing_mode"] = "direct"
+                state["processing_errors"] = state.get("processing_errors", [])
+                return state
+            
+            # Traditional text extraction mode
+            pdf_content = state.get("pdf_content", "")
+            if not pdf_content:
+                logger.error("❌ PDF Processor: No PDF content provided for text extraction")
+                state["processing_errors"] = state.get("processing_errors", [])
+                state["processing_errors"].append("No PDF content provided for text extraction")
+                return state
+            
+            logger.info("🔧 PDF Processor: Extracting text from PDF with Gemini")
+            
+            # Create a prompt for PDF text extraction
+            extraction_prompt = """
+            Please extract all text content from this PDF document. 
+            Focus on:
+            1. Main body text
+            2. Headers and titles
+            3. Important clauses and sections
+            4. Key terms and definitions
+            5. Dates and numerical information
+            
+            Return the extracted text in a clean, readable format maintaining the document structure.
+            """
+            
+            try:
+                # Create message with PDF content using correct LangChain format
+                message = HumanMessage(
+                    content=[
+                        {
+                            "type": "text",
+                            "text": extraction_prompt
+                        },
+                        {
+                            "type": "media",
+                            "mime_type": "application/pdf",
+                            "data": pdf_content
+                        }
+                    ]
+                )
+                
+                # Use flash model for text extraction
+                start_time = time.time()
+                response = self.flash_llm.invoke([message])
+                extraction_time = time.time() - start_time
+                
+                # Extract text from response
+                if hasattr(response, 'content'):
+                    extracted_text = response.content
+                else:
+                    extracted_text = str(response)
+                
+                if extracted_text and len(extracted_text.strip()) > 100:
+                    state["document_text"] = extracted_text
+                    state["document_metadata"]["pdf_extraction_time"] = extraction_time
+                    state["document_metadata"]["pdf_extraction_success"] = True
+                    logger.info(f"✅ PDF Processor: Extracted {len(extracted_text)} characters in {extraction_time:.2f}s")
+                else:
+                    logger.warning("⚠️ PDF Processor: Insufficient text extracted")
+                    state["processing_errors"].append("Insufficient text extracted from PDF")
+                    
+            except Exception as e:
+                logger.error(f"❌ PDF Processor: PDF processing failed: {e}")
+                state["processing_errors"].append(f"PDF processing failed: {str(e)}")
+                
+            return state
+            
+        except Exception as e:
+            logger.error(f"❌ PDF Processor agent error: {e}")
+            state["processing_errors"].append(f"PDF Processor agent error: {str(e)}")
+            return state
+
+    def roughter_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Improved preprocessing with better text handling and direct PDF support."""
+        try:
+            # Check for direct PDF processing mode
+            processing_mode = state.get("processing_mode", "text_extraction")
+            
+            if processing_mode == "direct_pdf":
+                logger.info("🔧 Roughter Agent: Skipping preprocessing for direct PDF mode")
+                # Return state unchanged for direct PDF processing
+                return {
+                    "preprocessed_text": "DIRECT_PDF_MODE",  # Signal for master agent
+                    "processing_errors": [],
+                    "expected_agents": ["summarizer", "risk_analyzer", "highlighter", "confidence"],
+                    "completed_agents": []
+                }
+            
+            # Traditional text preprocessing
             document_text = state.get("document_text", "")
             
             if not document_text or len(document_text.strip()) < 100:
@@ -524,8 +657,19 @@ class ImprovedLegalAnalyzer:
         - Cross-agent intelligence and conflict resolution  
         - Real-time performance optimization
         - Adaptive timeout and priority management
+        - Direct PDF processing support
         """
         start_time = time.time()
+        
+        # Check for direct PDF processing mode
+        processing_mode = state.get("processing_mode", "text_extraction")
+        pdf_content = state.get("pdf_content", "")
+        
+        if processing_mode == "direct_pdf" and pdf_content:
+            logger.info("🔍 Master Agent: Using direct PDF processing mode")
+            return self._execute_master_with_pdf(state, start_time)
+        
+        # Traditional text-based processing
         text = state.get("preprocessed_text", "")
         
         if not text or len(text.strip()) < 50:
@@ -559,10 +703,10 @@ class ImprovedLegalAnalyzer:
         
         # Agent mapping for backward compatibility
         agent_functions = {
-            "summarizer": self._execute_summarizer,
-            "risk_analyzer": self._execute_risk_analyzer,
-            "highlighter": self._execute_highlighter,
-            "confidence": self._execute_confidence
+            "summarizer": lambda text: self._execute_summarizer(text, state),
+            "risk_analyzer": lambda text: self._execute_risk_analyzer(text, state),
+            "highlighter": lambda text: self._execute_highlighter(text, state),
+            "confidence": lambda text: self._execute_confidence(text, state)
         }
         
         def execute_agent_with_optimization(agent_name: str, text_chunk: str) -> Tuple[str, Dict[str, Any]]:
@@ -863,33 +1007,197 @@ class ImprovedLegalAnalyzer:
         
         return highlight_text[:max_length]
 
-    def _execute_summarizer(self, text: str) -> Dict[str, Any]:
-        """Execute summarizer agent."""
-        response = self._safe_invoke_agent(self.summarizer_chain, text, "Summarizer")
-        if "error" in response:
-            return self._get_fallback_result("summarizer")
-        return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
+    def _execute_summarizer(self, text: str, state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Execute summarizer agent with optional PDF support."""
+        # Check if we should use direct PDF processing
+        if state and state.get("processing_mode") == "direct_pdf" and state.get("pdf_content"):
+            return self._execute_agent_with_pdf(self.summarizer_chain, state.get("pdf_content"), "Summarizer", SUMMARIZER_PROMPT)
+        else:
+            response = self._safe_invoke_agent(self.summarizer_chain, text, "Summarizer")
+            if "error" in response:
+                return self._get_fallback_result("summarizer")
+            return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
 
-    def _execute_risk_analyzer(self, text: str) -> Dict[str, Any]:
-        """Execute risk analyzer agent."""
-        response = self._safe_invoke_agent(self.risk_chain, text, "Risk Analyzer")
-        if "error" in response:
-            return self._get_fallback_result("risk_analyzer")
-        return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
+    def _execute_risk_analyzer(self, text: str, state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Execute risk analyzer agent with optional PDF support."""
+        # Check if we should use direct PDF processing
+        if state and state.get("processing_mode") == "direct_pdf" and state.get("pdf_content"):
+            return self._execute_agent_with_pdf(self.risk_chain, state.get("pdf_content"), "Risk Analyzer", RISK_ANALYZER_PROMPT)
+        else:
+            response = self._safe_invoke_agent(self.risk_chain, text, "Risk Analyzer")
+            if "error" in response:
+                return self._get_fallback_result("risk_analyzer")
+            return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
 
-    def _execute_highlighter(self, text: str) -> Dict[str, Any]:
-        """Execute highlighter agent."""
-        response = self._safe_invoke_agent(self.highlighter_chain, text, "Highlighter")
-        if "error" in response:
-            return self._get_fallback_result("highlighter")
-        return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
+    def _execute_highlighter(self, text: str, state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Execute highlighter agent with optional PDF support."""
+        # Check if we should use direct PDF processing  
+        if state and state.get("processing_mode") == "direct_pdf" and state.get("pdf_content"):
+            return self._execute_agent_with_pdf(self.highlighter_chain, state.get("pdf_content"), "Highlighter", HIGHLIGHTER_PROMPT)
+        else:
+            response = self._safe_invoke_agent(self.highlighter_chain, text, "Highlighter")
+            if "error" in response:
+                return self._get_fallback_result("highlighter")
+            return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
 
-    def _execute_confidence(self, text: str) -> Dict[str, Any]:
-        """Execute confidence agent."""
-        response = self._safe_invoke_agent(self.confidence_chain, text, "Confidence")
-        if "error" in response:
-            return self._get_fallback_result("confidence")
-        return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
+    def _execute_confidence(self, text: str, state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Execute confidence agent with optional PDF support."""
+        # Check if we should use direct PDF processing
+        if state and state.get("processing_mode") == "direct_pdf" and state.get("pdf_content"):
+            return self._execute_agent_with_pdf(self.confidence_chain, state.get("pdf_content"), "Confidence", CONFIDENCE_PROMPT)
+        else:
+            response = self._safe_invoke_agent(self.confidence_chain, text, "Confidence")
+            if "error" in response:
+                return self._get_fallback_result("confidence")
+            return response["result"].dict() if hasattr(response["result"], "dict") else response["result"]
+
+    def _execute_agent_with_pdf(self, chain, pdf_content: str, agent_name: str, prompt_template) -> Dict[str, Any]:
+        """Execute an agent using direct PDF processing."""
+        try:
+            logger.info(f"🔍 {agent_name}: Processing PDF directly")
+            
+            # Create message with PDF content using correct LangChain format
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "text", 
+                        "text": str(prompt_template)
+                    },
+                    {
+                        "type": "media",
+                        "mime_type": "application/pdf",
+                        "data": pdf_content
+                    }
+                ]
+            )
+            
+            # Use the appropriate LLM based on agent type
+            if agent_name in ["Summarizer", "Risk Analyzer"]:
+                llm = self.pro_llm
+            else:
+                llm = self.flash_llm
+                
+            result = llm.invoke([message])
+            
+            # Extract result content 
+            if hasattr(result, 'content'):
+                content = result.content
+            else:
+                content = str(result)
+                
+            # Try to parse as JSON if possible
+            try:
+                import json
+                parsed_result = json.loads(content)
+                return parsed_result
+            except:
+                # Return as structured response
+                return {"analysis": content, "agent": agent_name}
+                
+        except Exception as e:
+            logger.error(f"❌ {agent_name} PDF processing error: {e}")
+            return self._get_fallback_result(agent_name.lower().replace(" ", "_"))
+
+    def _execute_master_with_pdf(self, state: Dict[str, Any], start_time: float) -> Dict[str, Any]:
+        """Execute master agent using direct PDF processing for all sub-agents."""
+        try:
+            pdf_content = state.get("pdf_content", "")
+            logger.info("🚀 Master Agent: Executing all agents with direct PDF processing")
+            
+            # Import prompts
+            from agents.prompts import (
+                SUMMARIZER_PROMPT, RISK_ANALYZER_PROMPT, 
+                HIGHLIGHTER_PROMPT, CONFIDENCE_PROMPT
+            )
+            
+            # Define agents to execute in parallel
+            agents_config = [
+                ("Summarizer", SUMMARIZER_PROMPT),
+                ("Risk Analyzer", RISK_ANALYZER_PROMPT),  
+                ("Highlighter", HIGHLIGHTER_PROMPT),
+                ("Confidence", CONFIDENCE_PROMPT)
+            ]
+            
+            # Execute all agents in parallel using ThreadPoolExecutor
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import threading
+            
+            agent_results = {}
+            completed_agents = []
+            errors = []
+            
+            def execute_pdf_agent(agent_name, prompt):
+                """Execute a single agent with PDF content."""
+                try:
+                    result = self._execute_agent_with_pdf(
+                        chain=None,
+                        pdf_content=pdf_content, 
+                        agent_name=agent_name,
+                        prompt_template=prompt
+                    )
+                    return agent_name, result
+                except Exception as e:
+                    logger.error(f"❌ {agent_name} failed: {e}")
+                    return agent_name, self._get_fallback_result(agent_name.lower().replace(" ", "_"))
+            
+            # Execute agents in parallel
+            max_workers = min(4, len(agents_config))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all tasks
+                future_to_agent = {
+                    executor.submit(execute_pdf_agent, agent_name, prompt): agent_name 
+                    for agent_name, prompt in agents_config
+                }
+                
+                # Collect results as they complete
+                for future in as_completed(future_to_agent):
+                    agent_name = future_to_agent[future]
+                    try:
+                        result_agent_name, result = future.result()
+                        
+                        # Map results to expected keys
+                        if agent_name == "Summarizer":
+                            agent_results["summary_result"] = result
+                        elif agent_name == "Risk Analyzer":
+                            agent_results["risk_result"] = result
+                        elif agent_name == "Highlighter":
+                            agent_results["highlights_result"] = result
+                        elif agent_name == "Confidence":
+                            agent_results["confidence_result"] = result
+                            
+                        completed_agents.append(agent_name)
+                        logger.info(f"✅ {agent_name} completed successfully")
+                        
+                    except Exception as e:
+                        logger.error(f"❌ {agent_name} execution failed: {e}")
+                        errors.append(f"{agent_name}: {str(e)}")
+            
+            # Calculate execution time
+            execution_time = time.time() - start_time
+            
+            logger.info(f"🎯 Master Agent: Completed {len(completed_agents)}/4 agents in {execution_time:.2f}s")
+            
+            return {
+                "summary_result": agent_results.get("summary_result", {}),
+                "risk_result": agent_results.get("risk_result", {}), 
+                "highlights_result": agent_results.get("highlights_result", {}),
+                "confidence_result": agent_results.get("confidence_result", {}),
+                "completed_agents": completed_agents,
+                "processing_errors": errors,
+                "execution_time": execution_time,
+                "processing_mode": "direct_pdf"
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Master Agent PDF processing error: {e}")
+            return {
+                "summary_result": {},
+                "risk_result": {},
+                "highlights_result": {},
+                "confidence_result": {},
+                "completed_agents": [],
+                "processing_errors": [f"Master agent error: {str(e)}"]
+            }
 
     def _get_fallback_result(self, agent_name: str) -> Dict[str, Any]:
         """Get fallback results for failed agents."""
@@ -1220,13 +1528,15 @@ def create_workflow():
     # Create the workflow graph
     workflow = StateGraph(GraphState)
     
-    # Add nodes - now using master-sub architecture
+    # Add nodes - including PDF processor for direct PDF handling
+    workflow.add_node("pdf_processor", analyzer.pdf_processor_agent)
     workflow.add_node("roughter", analyzer.roughter_agent)
     workflow.add_node("master_agent", analyzer.master_agent)  # Master coordinates parallel sub-agents
     workflow.add_node("coordinator", analyzer.coordinator_agent)
     
-    # Define the streamlined workflow edges (parallel execution via master)
-    workflow.add_edge(START, "roughter")
+    # Define the streamlined workflow edges with PDF processing
+    workflow.add_edge(START, "pdf_processor")  # Start with PDF processing (handles both modes)
+    workflow.add_edge("pdf_processor", "roughter")
     workflow.add_edge("roughter", "master_agent")  # Master handles all sub-agents in parallel
     workflow.add_edge("master_agent", "coordinator")
     workflow.add_edge("coordinator", END)
@@ -1234,7 +1544,7 @@ def create_workflow():
     # Compile the workflow
     app = workflow.compile()
     
-    logger.info("🚀 Created optimized workflow with parallel master-sub architecture")
+    logger.info("🚀 Created optimized workflow with PDF processing and parallel master-sub architecture")
     return app
 
 async def process_document_workflow(document_text: str) -> Dict[str, Any]:

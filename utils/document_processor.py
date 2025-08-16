@@ -53,9 +53,15 @@ async def extract_text_from_pdf(file: UploadFile) -> str:
     # Read file content
     content = await file.read()
     
+    # Use the bytes version for processing
+    return extract_text_from_pdf_bytes(content)
+
+def extract_text_from_pdf_bytes(pdf_content: bytes) -> str:
+    """Extract text from PDF bytes using PyMuPDF and PaddleOCR (if available)."""
+    
     # Create temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-        tmp_file.write(content)
+        tmp_file.write(pdf_content)
         tmp_path = tmp_file.name
     
     try:
@@ -81,8 +87,8 @@ async def extract_text_from_pdf(file: UploadFile) -> str:
                     pil_image = Image.open(io.BytesIO(img_data))
                     image_np = np.array(pil_image)
                     
-                    # Extract text using PaddleOCR in thread pool
-                    ocr_results = await asyncio.to_thread(ocr.ocr, image_np, cls=True)
+                    # Extract text using PaddleOCR
+                    ocr_results = ocr.ocr(image_np, cls=True)
                     
                     # Combine text from all detected regions
                     ocr_text = ""
