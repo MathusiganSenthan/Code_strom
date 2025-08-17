@@ -2,6 +2,8 @@ import os
 import asyncio
 import time
 import base64
+import hashlib
+import uuid
 from typing import Dict, Any
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
@@ -9,6 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from agents.workflow import create_workflow
 from utils.document_processor import extract_text_from_pdf
+from services.simple_vector_store import SimpleVectorStore
+from services.simple_embedding_service import SimpleEmbeddingService
+from services.ultra_simple_rag_service import UltraSimpleRAGService, create_ultra_simple_rag_service
 import logging
 import traceback
 
@@ -45,24 +50,74 @@ app.add_middleware(
 
 # Initialize workflow once at startup
 workflow = None
+vector_store = None
+embedding_service = None
+rag_service = None
 
 @app.on_event("startup")
 async def startup_event():
-    global workflow
+    global workflow, vector_store, embedding_service, rag_service
     try:
         logger.info("Initializing AI Legal Document Analyzer...")
+        
+        # Initialize direct processing workflow
         workflow = create_workflow()
-        logger.info("✅ Workflow initialized successfully")
+        logger.info("✅ Direct processing workflow initialized")
+        
+        # Initialize vector processing services
+        try:
+            vector_store = SimpleVectorStore(
+                host="localhost",
+                port=6379,
+                password=None  # Remove password requirement for local testing
+            )
+            embedding_service = SimpleEmbeddingService()
+            logger.info("✅ Vector processing services initialized")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Vector services failed to initialize: {e}")
+            logger.warning("Using mock services for testing")
+            vector_store = None
+            embedding_service = None
+        
+        # Initialize RAG service with fallback to mock services
+        logger.info("🔧 Starting RAG service initialization...")
+        try:
+            logger.info("� Importing RAG service...")
+            logger.info(f"🔍 Vector store available: {vector_store is not None}")
+            logger.info(f"🔍 Embedding service available: {embedding_service is not None}")
+            
+            logger.info("🏗️ Creating RAG service instance...")
+            global rag_service  # Ensure we're updating the global variable
+            rag_service = create_ultra_simple_rag_service(vector_store, embedding_service)
+            
+            logger.info("✅ RAG service created, running health check...")
+            # Verify RAG service is working
+            health = rag_service.health_check()
+            logger.info(f"📊 RAG service health: {health['status']}")
+            logger.info(f"🎯 RAG service type: {health.get('type', 'unknown')}")
+            
+            logger.info("✅ RAG Q&A service initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ RAG service initialization failed: {e}")
+            logger.error(f"📋 Exception type: {type(e)}")
+            logger.error(f"📋 Exception details: {str(e)}")
+            logger.error("📋 Full traceback:")
+            logger.error(traceback.format_exc())
+            rag_service = None
+        
         logger.info("🚀 AI Legal Document Analyzer is ready!")
+        
     except Exception as e:
-        logger.error(f"❌ Failed to initialize workflow: {e}")
+        logger.error(f"❌ Failed to initialize services: {e}")
         logger.error(traceback.format_exc())
         raise
 
-@app.post("/process_document")
-async def process_document(file: UploadFile = File(...)):
+@app.post("/process_direct")
+async def process_document_direct(file: UploadFile = File(...)):
     """
-    Process uploaded legal document and return comprehensive analysis.
+    Process uploaded legal document with direct AI analysis (fast <20s).
     
     - **file**: PDF file to analyze (max size: 10MB recommended)
     
@@ -389,20 +444,434 @@ async def process_document(file: UploadFile = File(...)):
             detail=f"Internal server error while processing document: {str(e)}"
         )
 
+@app.post("/process_vector")
+async def process_document_vector(file: UploadFile = File(...)):
+    """
+    Process uploaded legal document for vector storage and semantic search.
+    
+    - **file**: PDF file to process (max size: 10MB recommended)
+    
+    Returns:
+    - Document stored in vector database
+    - Chunked and embedded for semantic search
+    - Ready for Q&A and similarity search
+    """
+    
+    start_time = time.time()
+    
+    # Check if vector services are available
+    if not vector_store or not embedding_service:
+        raise HTTPException(
+            status_code=503, 
+            detail="Vector processing services are not available. Please check Redis connection."
+        )
+    
+    # Validate file
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+        
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    # Check file size (10MB limit)
+    if file.size and file.size > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
+    
+    try:
+        logger.info(f"📄 Processing document for vector storage: {file.filename}")
+        
+        # Generate unique document ID
+        file_content = await file.read()
+        document_id = hashlib.md5(f"{file.filename}_{time.time()}".encode()).hexdigest()
+        
+        # Extract text from PDF
+        logger.info("📝 Extracting text from PDF...")
+        text_extraction_start = time.time()
+        
+        # Create a temporary file object for the extract function
+        import tempfile
+        import io
+        from utils.document_processor import extract_text_from_pdf_bytes
+        
+        document_text = extract_text_from_pdf_bytes(file_content)
+        text_extraction_time = time.time() - text_extraction_start
+        
+        if not document_text.strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Could not extract text from PDF. The document may be image-only or corrupted."
+            )
+        
+        # Process document for vector storage
+        logger.info("🔄 Creating chunks and generating embeddings...")
+        vector_processing_start = time.time()
+        
+        # Prepare document for processing
+        documents = [{
+            'id': document_id,
+            'content': document_text,
+            'filename': file.filename,
+            'metadata': {
+                "file_size": len(file_content),
+                "processing_timestamp": time.time(),
+                "text_length": len(document_text)
+            }
+        }]
+        
+        processed_chunks = embedding_service.process_documents(documents)
+        
+        if not processed_chunks:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to process document chunks or generate embeddings"
+            )
+        
+        vector_processing_time = time.time() - vector_processing_start
+        
+        # Store in Redis vector database
+        logger.info("💾 Storing chunks in vector database...")
+        storage_start = time.time()
+        
+        success = vector_store.store_document_chunks(
+            document_id=document_id,
+            filename=file.filename,
+            chunks=processed_chunks
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to store document in vector database"
+            )
+        
+        storage_time = time.time() - storage_start
+        total_time = time.time() - start_time
+        
+        # Get vector store stats
+        vector_stats = vector_store.get_stats()
+        
+        logger.info(f"✅ Vector processing completed in {total_time:.2f}s")
+        logger.info(f"📊 Stored {len(processed_chunks)} chunks in vector database")
+        
+        return {
+            "status": "success",
+            "message": "Document processed and stored in vector database",
+            "document_info": {
+                "document_id": document_id,
+                "filename": file.filename,
+                "text_length": len(document_text),
+                "chunk_count": len(processed_chunks),
+                "embedding_model": "text-embedding-004",
+                "embedding_dimension": 768
+            },
+            "processing_times": {
+                "text_extraction": round(text_extraction_time, 2),
+                "vector_processing": round(vector_processing_time, 2),
+                "storage": round(storage_time, 2),
+                "total": round(total_time, 2)
+            },
+            "vector_stats": vector_stats,
+            "chunks_preview": [
+                {
+                    "chunk_index": chunk.get("chunk_index", i),
+                    "content_preview": chunk["content"][:200] + "..." if len(chunk["content"]) > 200 else chunk["content"],
+                    "chunk_size": chunk.get("chunk_size", len(chunk["content"]))
+                }
+                for i, chunk in enumerate(processed_chunks[:3])  # Show first 3 chunks as preview
+            ]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error in vector processing for {file.filename}: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Internal server error during vector processing: {str(e)}"
+        )
+
+@app.post("/search_documents")
+async def search_documents(query: str, top_k: int = 5, document_id: str = None):
+    """
+    Search for similar document chunks using semantic search.
+    
+    - **query**: Search query string
+    - **top_k**: Number of results to return (default: 5)
+    - **document_id**: Optional filter by specific document
+    
+    Returns similar chunks with relevance scores.
+    """
+    
+    if not vector_store or not embedding_service:
+        raise HTTPException(
+            status_code=503, 
+            detail="Vector search services are not available"
+        )
+    
+    try:
+        logger.info(f"🔍 Searching for: '{query}'")
+        
+        # Generate query embedding
+        query_embedding = embedding_service.generate_query_embedding(query)
+        
+        # Search for similar chunks
+        similar_chunks = vector_store.search_similar_chunks(
+            query_embedding=query_embedding,
+            top_k=top_k,
+            document_id=document_id
+        )
+        
+        return {
+            "status": "success",
+            "query": query,
+            "results_count": len(similar_chunks),
+            "results": similar_chunks
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Search failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Search failed: {str(e)}"
+        )
+
+@app.get("/vector_stats")
+async def get_vector_stats():
+    """Get vector database statistics."""
+    
+    if not vector_store:
+        raise HTTPException(
+            status_code=503, 
+            detail="Vector store not available"
+        )
+    
+    try:
+        stats = vector_store.get_stats()
+        health = vector_store.health_check()
+        
+        return {
+            "status": "success",
+            "vector_store_health": health,
+            "statistics": stats
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to get vector stats: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get statistics: {str(e)}"
+        )
+
+@app.post("/ask_question")
+async def ask_question(query: str, document_id: str = None):
+    """
+    Ask a question about a legal document using RAG (Retrieval-Augmented Generation).
+    
+    - **query**: The question to ask about the document
+    - **document_id**: Optional specific document ID to search (if not provided, searches all documents)
+    
+    Returns AI-generated answer with sources, confidence, and related information.
+    """
+    
+    if not rag_service:
+        logger.error("❌ RAG service is None - service was not properly initialized")
+        raise HTTPException(
+            status_code=503,
+            detail="RAG Q&A service is not available - service initialization failed"
+        )
+    
+    if not query or not query.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Query parameter is required and cannot be empty"
+        )
+    
+    try:
+        logger.info(f"💬 Processing Q&A query: '{query[:50]}...'")
+        logger.debug(f"🔍 RAG service type: {type(rag_service)}")
+        
+        # Use the RAG service to process the question
+        rag_answer = await rag_service.ask_question(query.strip(), document_id)
+        logger.info(f"✅ Q&A completed in {rag_answer.processing_time:.2f}s")
+        
+        return {
+            "status": "success",
+            "query": query,
+            "answer": rag_answer.answer,
+            "confidence_score": rag_answer.confidence_score,
+            "response_type": rag_answer.response_type,
+            "source_sections": [f"Section {i}" for i in range(1, min(4, len(rag_answer.citations) + 1))],
+            "related_topics": rag_answer.related_topics,
+            "citations": rag_answer.citations,
+            "follow_up_questions": rag_answer.follow_up_questions,
+            "processing_time": rag_answer.processing_time,
+            "timestamp": time.time()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Q&A processing failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process question: {str(e)}"
+        )
+
+@app.get("/suggested_questions")
+async def get_suggested_questions(document_id: str = None):
+    """
+    Get suggested questions for a document to help users get started.
+    
+    - **document_id**: Optional specific document ID
+    
+    Returns list of suggested questions relevant to legal documents.
+    """
+    
+    try:
+        if rag_service:
+            suggestions = rag_service.get_suggested_questions()
+        else:
+            suggestions = [
+                "What are the key obligations for each party?",
+                "What are the termination conditions?",
+                "How are disputes resolved?",
+                "What are the liability limitations?",
+                "What intellectual property rights are involved?",
+                "What are the payment terms and conditions?",
+                "Are there any confidentiality requirements?",
+                "What happens in case of breach of contract?",
+                "What are the governing law and jurisdiction?",
+                "Are there any automatic renewal clauses?"
+            ]
+        
+        return {
+            "status": "success",
+            "document_id": document_id,
+            "suggested_questions": suggestions,
+            "total_suggestions": len(suggestions)
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to get suggested questions: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get suggested questions: {str(e)}"
+        )
+
+@app.get("/rag_health")
+async def get_rag_health():
+    """Check RAG service health and capabilities."""
+    
+    try:
+        logger.info(f"🏥 RAG Health Check - Service available: {rag_service is not None}")
+        
+        if rag_service:
+            logger.info(f"🔍 RAG service type: {type(rag_service)}")
+            health_info = rag_service.health_check()
+            logger.info(f"📊 RAG health info: {health_info}")
+            
+            return {
+                "status": "success",
+                "rag_health": health_info,
+                "capabilities": health_info.get("capabilities", {}),
+                "debug_info": {
+                    "service_type": str(type(rag_service)),
+                    "service_available": True,
+                    "global_variable_set": True
+                }
+            }
+        else:
+            logger.warning("⚠️ RAG service is None during health check")
+            return {
+                "status": "unavailable",
+                "message": "RAG service not initialized",
+                "rag_health": {
+                    "status": "unavailable",
+                    "vector_store": "unknown",
+                    "embedding_service": "unknown", 
+                    "llm_model": "unknown",
+                    "workflow_ready": False
+                },
+                "capabilities": {
+                    "question_answering": False,
+                    "semantic_search": False,
+                    "document_citation": False,
+                    "confidence_scoring": False,
+                    "follow_up_generation": False
+                },
+                "debug_info": {
+                    "service_type": "None",
+                    "service_available": False,
+                    "global_variable_set": False
+                }
+            }
+        
+    except Exception as e:
+        logger.error(f"❌ RAG health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+@app.get("/test_endpoint")
+async def test_endpoint():
+    """Simple test endpoint to verify server reload"""
+    return {"message": "Test endpoint is working!", "timestamp": time.time()}
+
+# Keep original endpoint for backward compatibility
+@app.post("/process_document")
+async def process_document(file: UploadFile = File(...)):
+    """
+    Legacy endpoint - redirects to direct processing.
+    Use /process_direct or /process_vector for specific processing types.
+    """
+    return await process_document_direct(file)
+
 @app.get("/health")
 async def health_check():
     """
     Health check endpoint to verify service status.
     
-    Returns system status and workflow readiness.
+    Returns system status and service readiness.
     """
-    return {
-        "status": "healthy" if workflow is not None else "initializing",
-        "workflow_ready": workflow is not None,
+    health_status = {
+        "status": "healthy",
+        "services": {
+            "direct_processing": {
+                "status": "healthy" if workflow is not None else "unavailable",
+                "ready": workflow is not None
+            },
+            "vector_processing": {
+                "status": "healthy" if (vector_store is not None and embedding_service is not None) else "unavailable",
+                "ready": vector_store is not None and embedding_service is not None
+            },
+            "rag_qa": {
+                "status": "healthy" if rag_service is not None else "unavailable",
+                "ready": rag_service is not None
+            }
+        },
         "service": "AI Legal Document Analyzer",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "timestamp": time.time()
     }
+    
+    # Check vector store health if available
+    if vector_store:
+        try:
+            vector_health = vector_store.health_check()
+            health_status["services"]["vector_processing"]["redis_health"] = vector_health
+        except:
+            health_status["services"]["vector_processing"]["status"] = "unhealthy"
+    
+    # Overall system health
+    all_healthy = all(
+        service["status"] == "healthy" 
+        for service in health_status["services"].values()
+    )
+    
+    if not all_healthy:
+        health_status["status"] = "partial"
+    
+    return health_status
 
 @app.get("/")
 async def root():
@@ -413,19 +882,27 @@ async def root():
         "architecture": "Master-Sub Agentic Parallel Execution",
         "performance": "Target response time: <20 seconds",
         "endpoints": {
-            "POST /process_document": "Upload and analyze a PDF document",
-            "GET /health": "Check service health",
+            "POST /process_direct": "Fast AI analysis (existing workflow)",
+            "POST /process_vector": "Vector processing + storage", 
+            "POST /search_documents": "Semantic search across stored documents",
+            "POST /ask_question": "RAG-powered Q&A about documents",
+            "GET /suggested_questions": "Get suggested questions for documents",
+            "GET /vector_stats": "Vector database statistics",
+            "GET /rag_health": "RAG service health check",
+            "GET /health": "Service health check",
             "GET /docs": "Interactive API documentation",
             "GET /redoc": "Alternative API documentation"
         },
         "supported_formats": ["PDF"],
         "features": [
             "⚡ Parallel AI agent processing for speed",
-            "� Direct PDF processing with Gemini (no text extraction)",
+            "📄 Direct PDF processing with Gemini (no text extraction)",
             "📄 Native PDF understanding and analysis",
             "⚠️ Risk assessment and red flag detection", 
             "🔍 Key highlights extraction",
             "📊 Confidence metrics and recommendations",
+            "💬 RAG-powered Q&A with document citations",
+            "🧠 Semantic search across document knowledge base",
             "🎯 Sub-20 second response times"
         ],
         "technology": {
