@@ -33,206 +33,464 @@ Return only the cleaned, well-formatted text that maintains all original meaning
 SUMMARIZER_PROMPT = PromptTemplate.from_template(
     SYSTEM_CONTEXT + """
 
-Analyze this legal document and provide a comprehensive summary that a non-lawyer can easily understand.
+Analyze this legal document and create a comprehensive summary in simple, everyday language. Avoid legal jargon and explain everything in plain English.
 
 Document Text:
 {text}
 
-Create a summary in simple, clear language that covers:
+IMPORTANT: Start directly with the document description. Do NOT include ANY headers like "Document Analysis", "Executive Summary", "Document Overview", or similar. The frontend will provide the main heading. Start immediately with the document title and description.
 
-**Document Overview:**
-- What type of legal document this is (be specific - e.g., "Software as a Service Agreement", "Employment Contract", "Non-Disclosure Agreement")
-- Who are the main parties involved (names/roles)
-- What is the main purpose or goal of this agreement
+**Document:** [Document Type - e.g., Software as a Service Agreement, Employment Contract, Terms of Service]
 
-**Key Obligations:**
-For each party, clearly explain:
-- What they must do 
-- When they must do it
-- What happens if they don't
+This is a <mark class="legal-term">**[document type]**</mark> between [main parties] that [main purpose and key terms in 2-3 clear sentences]. [Overall assessment of fairness/complexity in 1 sentence].
 
-**Important Dates & Timeframes:**
-- When the agreement starts and ends
-- Critical deadlines and renewal dates
-- Notice periods for termination or changes
+**Key Parties:**
 
-**How the Agreement Can End:**
-- Normal termination procedures
-- Early termination rights
-- What happens after termination
+- **[Party 1]:** [Their role and responsibilities]
+- **[Party 2]:** [Their role and responsibilities]
 
-**Financial Terms:**
-- Payment amounts and schedules
-- Penalties or late fees
-- Who pays for what (taxes, expenses, etc.)
+---
 
-**Other Crucial Information:**
-- Intellectual property ownership
-- Confidentiality requirements
-- Dispute resolution procedures
-- Governing law and jurisdiction
+## Your Main Responsibilities
 
-Use simple, clear language and avoid legal jargon. When legal terms must be used, explain them in parentheses.
-Focus on practical implications and what the user needs to know to make informed decisions.
+### Primary Obligations
+1. **[Primary obligation]:** [Clear explanation of what this means]
+2. **[Secondary obligation]:** [Clear explanation of what this means]  
+3. **[Third obligation]:** [Clear explanation of what this means]
+
+### Ongoing Requirements
+- Regular compliance with [specific requirement]
+- Notification obligations when [specific events occur]
+- Maintenance of [specific standards/certifications]
+
+---
+
+## Financial Terms & Money Matters
+
+### Payment Structure
+1. **Base Payment:** <mark class="financial">**$[amount]**</mark> [frequency/timing]
+2. **Additional Fees:** <mark class="financial">**$[amount]**</mark> for [specific services]
+3. **Late Penalties:** <mark class="financial">**$[amount]**</mark> or [percentage] if payment delayed beyond <mark class="deadline">**[X days]**</mark>
+
+### Cost Protection
+- **Payment Cap:** Maximum you'll pay is <mark class="financial">**$[amount]**</mark>
+- **Refund Policy:** [Conditions under which money can be returned]
+- **Hidden Costs:** [Any additional fees to watch for]
+
+---
+
+## Important Dates & Critical Deadlines
+
+### Contract Timeline
+1. **Start Date:** <mark class="deadline">**[date]**</mark>
+2. **Key Milestones:** <mark class="deadline">**[dates]**</mark> for [specific deliverables]
+3. **End Date:** <mark class="deadline">**[date]**</mark> (unless renewed)
+
+### Action Required Dates
+- **Payment Due:** <mark class="deadline">**[X days]**</mark> from [trigger event]
+- **Notice Required:** <mark class="deadline">**[X days]**</mark> before [termination/changes]
+- **Renewal Decision:** <mark class="deadline">**[X days]**</mark> before contract expires
+
+---
+
+## Critical Terms That Need Your Attention
+
+### Auto-Renewal & Termination
+1. **Auto-Renewal:** <mark class="legal-term">**Automatic renewal**</mark> for [period] unless you give <mark class="deadline">**[X days]**</mark> notice
+2. **Termination Rights:** [Who can terminate and under what conditions]
+3. **Exit Requirements:** [What you must do to end the agreement]
+
+### High-Risk Legal Clauses
+1. **Liability Cap:** They're only responsible for up to <mark class="financial">**$[amount]**</mark>
+2. **Indemnification:** <mark class="legal-term">**You must protect them**</mark> from [specific types of claims]
+3. **IP Ownership:** [Who owns what intellectual property]
+4. **Data Rights:** [What happens to your data]
+
+### One-Sided Terms to Watch
+- **Unilateral Changes:** <mark class="legal-term">**They can modify**</mark> [terms/pricing] with [notice period]
+- **Dispute Resolution:** <mark class="legal-term">**Mandatory arbitration**</mark> in [location]
+- **Governing Law:** Disputes handled under [state/country] law
+
+---
+
+## Overall Assessment & Recommendations
+
+### Risk Summary
+- **Complexity Level:** [Simple/Moderate/Complex] - [One sentence explanation]
+- **Fairness Rating:** [Fair/Mostly Fair/Concerning/Heavily One-Sided] - [Brief explanation]
+- **Overall Risk:** [Low/Medium/High] based on [key factors]
+
+### Action Items
+1. **Immediate:** [Most urgent thing to address before signing]
+2. **Important:** [Key terms to negotiate or clarify]
+3. **Consider:** [Whether legal review is recommended]
+
+### Bottom Line
+[2-3 sentences summarizing whether this is a good deal and main things to watch out for]
+
+Use selective highlighting for maximum impact:
+- <mark class="legal-term">**critical legal terms**</mark> for auto-renewal, termination, liability, indemnification, penalties
+- <mark class="financial">**$[amount]**</mark> for all monetary values
+- <mark class="deadline">**[timeframe]**</mark> for all dates and deadlines  
+- **bold** for general structure and emphasis
+- *italics* for general legal language
+
+CRITICAL: Always mark these high-risk terms:
+- <mark class="legal-term">auto-renewal</mark>
+- <mark class="legal-term">automatic renewal</mark>
+- <mark class="legal-term">penalty</mark>
+- <mark class="legal-term">termination fee</mark>
+- <mark class="legal-term">cancellation fee</mark>
+- <mark class="legal-term">breach</mark>
+- <mark class="legal-term">default</mark>
+- <mark class="legal-term">indemnification</mark>
+- <mark class="legal-term">liability limitation</mark>
 """
 )
 
 RISK_ANALYZER_PROMPT = PromptTemplate.from_template(
     SYSTEM_CONTEXT + """
 
-Conduct a thorough risk analysis of this legal document from the user's perspective.
+Analyze this legal document for potential risks and explain them in simple, everyday language. Focus on practical consequences and what could realistically go wrong.
 
 Document Text:
 {text}
 
-Provide a comprehensive risk assessment structured as follows:
+IMPORTANT: Use selective highlighting for legal terms only:
+- Use **bold text** for general emphasis and structure (headings, section titles)
+- Use `<mark class="legal-term">important legal term</mark>` for critical legal terms like: penalties, fees, termination, auto-renewal, liability, indemnification
+- Use `<mark class="financial">$amounts</mark>` for financial figures and costs
+- Use `<mark class="deadline">dates and deadlines</mark>` for time-sensitive information
+- Use numbered lists (1. 2. 3.) for sequential steps or priorities
+- Use bullet points (- or •) for related items
+- Use ### for subsection headers
+- Use > blockquotes for important warnings
+- Use tables for structured data when appropriate
 
-**Overall Risk Assessment:**
-- Overall risk level (LOW/MEDIUM/HIGH) with clear reasoning
-- Risk score (1-10 scale) with explanation
-- Executive summary of main concerns
+Provide ONLY the risk analysis content below. Do NOT include any introductory phrases. Start directly with the Overall Risk Assessment.
 
-**Critical Risks (HIGH SEVERITY):**
-For each critical risk, provide:
-- Clear title describing the risk
-- Which section/clause contains this risk
-- Plain English explanation of what could go wrong
-- Potential financial or business impact
-- Specific recommendation to address it
+## Overall Risk Assessment
 
-**Moderate Risks (MEDIUM SEVERITY):**
-- Important risks that need monitoring
-- How they could affect the user
-- Suggested precautions or negotiations
+**Risk Level:** [LOW/MEDIUM/HIGH] 
 
-**Red Flags & Unusual Terms:**
-- Clauses that seem unfair or heavily favor one party
-- Unusual or non-standard terms
-- Hidden obligations or penalties
-- Vague language that could cause disputes
+**Risk Score:** [1-10]/10 - [Explain in one simple sentence why this score]
 
-**Financial Risks:**
-- Penalties, late fees, or monetary consequences
-- Unlimited liability exposure
-- Payment terms that favor the other party
-- Hidden costs or escalating fees
+**Quick Summary:** [2-3 sentences explaining the main things to watch out for]
 
-**Liability & Responsibility Issues:**
-- Who bears responsibility for what
-- Indemnification requirements
-- Insurance obligations
-- Limitation of liability clauses
+---
 
-**Terms Favoring the Other Party:**
-- One-sided termination rights
-- Broad intellectual property claims
-- Excessive confidentiality requirements
-- Unfair dispute resolution procedures
+## Critical Risks (Things That Could Really Hurt You)
 
-Explain each risk in terms a business person can understand, focusing on real-world consequences and practical implications.
+For each major risk, use this numbered structure:
+
+### 1. **[Risk Title in Plain English]**
+
+| **Aspect** | **Details** |
+|------------|-------------|
+| **What This Means** | [Explain like you're talking to a friend] |
+| **Where It's Found** | *Section [X], Clause [Y]* |
+| **What Could Go Wrong** | [Real-world consequences] |
+| **Potential Cost/Impact** | <mark class="financial">**$[Amount]**</mark> or [time/business impact] |
+| **What You Should Do** | [Specific recommendation] |
+| **Warning** | [Any immediate action needed] |
+
+### 2. **[Next Risk Title]**
+[Continue with same structure...]
+
+---
+
+## Important Things to Watch For
+
+### A. **Unusual or One-Sided Terms**
+
+1. **Auto-Renewal Clauses**
+   - How the contract might renew: <mark class="legal-term">auto-renewal</mark> terms
+   - Notice required: <mark class="deadline">**[timeframe] days**</mark>
+   - Impact: [explain consequences]
+
+2. **Termination Rights**
+   - Who can end it: [details]
+   - How easily: [process and requirements]
+   - Penalties: <mark class="financial">**$[amount]**</mark> or <mark class="legal-term">termination fees</mark>
+
+3. **Penalty Clauses**
+   - Types of penalties: <mark class="legal-term">late fees</mark>, <mark class="legal-term">penalties</mark>
+   - Amounts: <mark class="financial">**$[specific amounts]**</mark>
+   - Triggers: [what causes them]
+
+### B. **Financial Risks**
+
+| **Risk Type** | **Details** | **Potential Cost** | **Priority** |
+|---------------|-------------|-------------------|--------------|
+| **Payment Penalties** | [Late fees, interest] | <mark class="financial">**$[amount]**</mark> | High/Medium/Low |
+| **Liability Exposure** | [Maximum you could owe] | <mark class="financial">**$[amount]**</mark> | High/Medium/Low |
+| **Hidden Costs** | [Surprise fees] | <mark class="financial">**$[amount]**</mark> | High/Medium/Low |
+
+### C. **Problematic Clauses**
+
+- **Unfair Terms:** [Things heavily favoring the other party]
+  - Specific issues: [bullet list]
+  - Impact on you: [consequences]
+
+- **Vague Language:** [Unclear terms that could cause disputes]
+  - Examples: `"[quote specific problematic language]"`
+  - Why it matters: [explanation]
+
+---
+
+## What You Should Consider
+
+### Before Signing (Priority Order):
+
+1. **Immediate Action Required:**
+   - [ ] [Specific task 1]
+   - [ ] [Specific task 2]
+   - [ ] [Specific task 3]
+
+2. **Questions to Ask:**
+   - *[Question 1]*
+   - *[Question 2]*
+   - *[Question 3]*
+
+3. **Terms to Negotiate:**
+   - **[Term 1]:** [why and how to change]
+   - **[Term 2]:** [why and how to change]
+
+### Red Flags That Need Immediate Attention:
+
+> 🚨 **CRITICAL:** [Most concerning issue]
+> 
+> **Impact:** [what this means for you]
+> **Action:** [what to do about it]
+
+> ⚠️ **IMPORTANT:** [Second most concerning issue]
+> 
+> **Impact:** [consequences]
+> **Action:** [recommendation]
+
+Remember: Only highlight critical legal terms using the <mark> tags. Use **bold** for general structure and emphasis, not for highlighting every important word.
 """
 )
 
 HIGHLIGHTER_PROMPT = PromptTemplate.from_template(
     SYSTEM_CONTEXT + """
 
-Identify and highlight the most important elements in this legal document that require immediate attention.
+Extract and highlight the most critical information from this legal document in simple, everyday language. Focus on obligations, unusual terms, and important clauses that need immediate attention.
 
 Document Text:
 {text}
 
-Extract and organize the following critical information:
+IMPORTANT: Use proper markdown formatting with selective highlighting:
+- Use <mark class="legal-term">**[term]**</mark> for critical legal terms and contract clauses
+- Use <mark class="financial">**$[amount]**</mark> for money amounts, costs, and penalties  
+- Use <mark class="deadline">**[date/time]**</mark> for important dates, deadlines, and timeframes
+- Use **bold text** for general emphasis and structure (not highlighting)
+- Use *italic text* for general legal language and contract clauses
+- Use numbered lists for sequential steps and priorities
+- Use bullet points for related items and lists
+- Use tables for structured financial information
+- Use > blockquotes for warnings and important notices
+- Use `code formatting` for specific contract language quotes
 
-**Critical Deadlines & Important Dates:**
-For each deadline, specify:
-- What must be done by when
-- Who is responsible
-- Consequences of missing the deadline
-- How much advance notice is required
+Provide ONLY the key highlights content below. Do NOT include any introductory phrases. Start directly with the content sections.
 
-**Financial Obligations & Payments:**
-- All payment amounts, schedules, and due dates
-- Late fees, penalties, or interest charges
-- Who pays for taxes, fees, or additional costs
-- Refund policies or lack thereof
-- Pricing escalation clauses
+## Critical Deadlines & Important Dates
 
-**Auto-Renewal & Termination:**
-- How long the agreement lasts
-- Whether it automatically renews
-- How to prevent unwanted renewals (notice periods, procedures)
-- Termination rights for each party
-- What happens to payments if terminated early
+### 📅 Key Timeframes You Must Remember
 
-**Key Restrictions & Limitations:**
-- What the user cannot do under this agreement
-- Confidentiality or non-disclosure requirements
-- Non-compete or exclusivity clauses
-- Intellectual property restrictions
-- Usage limitations or prohibited activities
+| **What You Need to Do** | **When It's Due** | **Who's Responsible** | **Consequences if Missed** |
+|--------------------------|--------------------|-----------------------|----------------------------|
+| [Action required] | <mark class="deadline">**[Specific date]**</mark> | [You/Them/Both] | [Real consequences] |
+| [Action required] | <mark class="deadline">**[Timeframe]**</mark> | [You/Them/Both] | [Real consequences] |
 
-**Immediate Action Items:**
-- Things that must be done before signing
-- Requirements that take effect immediately upon signing
-- Initial payments or deposits due
-- Insurance or bonding requirements
-- Background checks or approvals needed
+### Contract Duration & Renewal
 
-**Negotiable Terms (Before Signing):**
-- Terms that are commonly negotiated
-- Standard clauses that could be modified
-- Areas where the user might have leverage
-- Alternative structures to consider
+1. **Duration:** [Length of agreement]
+2. **Renewal Process:** 
+   - *Auto-renewal:* [How it continues automatically]
+   - *Manual renewal:* [Steps required to renew]
+   - **Notice required:** <mark class="deadline">**[X days]**</mark> before [event]
 
-Present each item with specific details (amounts, dates, procedures) so the user knows exactly what they're committing to.
+---
+
+## Money Matters & Financial Obligations
+
+### 💰 What You Pay
+
+| **Payment Type** | **Amount** | **Frequency** | **Due Date** |
+|------------------|------------|---------------|--------------|
+| Main payment | <mark class="financial">**$[amount]**</mark> | [frequency] | <mark class="deadline">**[date]**</mark> |
+| Setup fees | <mark class="financial">**$[amount]**</mark> | One-time | <mark class="deadline">**[when]**</mark> |
+| Additional charges | <mark class="financial">**$[amount]**</mark> | [when applicable] | <mark class="deadline">**[timing]**</mark> |
+
+### ⚠️ Penalties & Extra Costs
+
+> **Warning:** These charges can add up quickly!
+
+- **Late payment fees:** **$[amount]** or **[%]%** after **[X] days**
+- **Termination penalties:** **$[amount]** if ended before **[date]**
+- **Other penalties:** [List specific triggers and costs]
+
+### Refunds & Cancellation Policy
+
+- **Refund eligibility:** [If/when you can get money back]
+- **Refund amount:** **[%]%** or **$[amount]**
+- **Process time:** **[X] business days**
+- **Early termination costs:** **$[amount]**
+
+---
+
+## Important Clauses That Need Your Attention
+
+### 🔍 Unusual or Concerning Terms
+
+1. **Auto-Renewal Clauses**
+   - How it works: *[specific mechanism]*
+   - Notice required: <mark class="deadline">**[X] days**</mark> before *[date]*
+   - How to cancel: [specific steps]
+
+2. **One-Sided Terms** ⚠️
+   - What favors them: [specific advantages]
+   - Impact on you: [your limitations]
+   - Why it matters: [real-world consequences]
+
+3. **Penalty Clauses**
+   
+   | **Trigger** | **Penalty** | **Severity** |
+   |-------------|-------------|--------------|
+   | [Action/event] | <mark class="financial">**$[amount]**</mark> | High/Medium/Low |
+   | [Action/event] | **[consequence]** | High/Medium/Low |
+
+### 📋 Your Key Responsibilities & Obligations
+
+#### What You Must Do:
+
+1. **[Primary obligation]**
+   - Details: [specific requirements]
+   - Timeline: <mark class="deadline">**[when/how often]**</mark>
+   - Consequences: [what happens if you don't]
+
+2. **[Secondary obligation]**
+   - Details: [specific requirements]
+   - Timeline: <mark class="deadline">**[when/how often]**</mark>
+
+#### What You Cannot Do:
+
+- <mark class="legal-term">**[Restriction 1]:**</mark> [explanation and impact]
+- <mark class="legal-term">**[Restriction 2]:**</mark> [explanation and impact]
+
+### 🏢 Their Responsibilities
+
+| **What They Must Provide** | **Performance Standard** | **Timeline** |
+|----------------------------|--------------------------|--------------|
+| [Service/product] | [quality/quantity standard] | **[timeframe]** |
+| [Service/product] | [quality/quantity standard] | **[timeframe]** |
+
+---
+
+## Red Flags & Terms to Negotiate
+
+### 🚨 Before You Sign (Priority Order):
+
+1. **URGENT - Address Immediately:**
+   - [ ] <mark class="legal-term">**[Critical issue]:**</mark> [why it matters]
+   - [ ] <mark class="legal-term">**[Critical issue]:**</mark> [why it matters]
+
+2. **Important - Should Negotiate:**
+   - <mark class="legal-term">**[Term to change]:**</mark> [current problem] → [suggested improvement]
+   - <mark class="legal-term">**[Term to change]:**</mark> [current problem] → [suggested improvement]
+
+3. **Questions to Ask:**
+   - *"[Specific question about vague term]"*
+   - *"[Question about cost/penalty]"*
+   - *"[Question about termination/changes]"*
+
+### ⚡ Immediate Action Required
+
+> **🔥 CRITICAL:** [Most urgent issue requiring immediate attention]
+> 
+> **Why this matters:** [impact on you]
+> **What to do:** [specific action steps]
+> **Deadline:** <mark class="deadline">**[when you must act]**</mark>
+
+> **⚠️ IMPORTANT:** [Second priority issue]
+> 
+> **Impact:** [consequences]
+> **Recommendation:** [what to do about it]
+
+### 📝 Documentation Needed
+
+- [ ] **[Document type]:** [why needed, when due]
+- [ ] **[Document type]:** [why needed, when due]
+- [ ] **[Insurance/permits]:** [coverage amounts, deadlines]
+
+Use selective highlighting with <mark> tags for critical terms: <mark class="financial">**amounts**</mark>, <mark class="deadline">**dates**</mark>, and <mark class="legal-term">**critical legal terms**</mark>. Use **bold** for general structure and emphasis. Use *italics* for general legal language. Structure everything for easy scanning and quick decision-making.
 """
 )
 
 CONFIDENCE_PROMPT = PromptTemplate.from_template(
     SYSTEM_CONTEXT + """
 
-Evaluate the clarity, completeness, and reliability of this legal document analysis.
+Assess how well this legal document can be understood and provide a confidence rating for the analysis. Focus on document clarity, complexity balance, and potential interpretation issues.
 
 Document Text:
 {text}
 
-Provide a detailed confidence assessment structured as follows:
+Provide a comprehensive assessment using markdown formatting for frontend preview.
 
-**Overall Confidence in Understanding:** [X]%
-Explain how confident you are in the accuracy and completeness of the analysis.
+##  Analysis Confidence Assessment
 
-**Clarity of Original Document:** [X]%
-Rate how well-written and clear the original legal document is.
+**Overall Confidence Level:** [X]% - [Explain in simple terms why this confidence level]
 
-**Straightforward and Well-Understood Sections:**
-- List sections that are clearly written and unambiguous
-- Explain why these sections are reliable
+**Document Quality Rating:** [X]% - [How well-written and clear is the original document]
 
-**Unclear, Ambiguous, or Potentially Problematic Sections:**
-- Identify sections with vague language or unclear terms
-- Point out conflicting or contradictory clauses
-- Highlight areas where interpretation could vary
-- Note any missing definitions or incomplete information
+##  Document Complexity Breakdown
 
-**Important Information That Might Be Missing or Unclear:**
-- Key terms that should be defined but aren't
-- Standard clauses that seem to be missing
-- Areas where more detail would be helpful
-- Cross-references to other documents that aren't available
+**Complexity Level:** [Simple/Moderate/Complex/Very Complex]
 
-**Should the User Consult with a Lawyer Before Signing?**
-Provide a clear YES/NO recommendation with reasoning.
+**Why This Rating:**
+[Explain in 2-3 sentences what makes this document this complexity level]
 
-**Specific Reasons Why Legal Consultation Might Be Needed:**
-- Complex legal concepts that require expert interpretation
-- High-risk terms that could have serious consequences
-- Industry-specific regulations that might apply
-- Unusual or non-standard clauses
-- Significant financial or legal exposure
-- Areas where negotiation might be beneficial
+### Balanced Evaluation: Simple vs Complex Elements
 
-Be honest about limitations and uncertainties. It's better to recommend professional review when in doubt.
-Explain your reasoning so users understand why certain areas need expert attention.
+** Straightforward Parts (Easy to Understand):**
+- [List 3-4 sections that are clearly written]
+- [Explain why these are reliable and clear]
+- [Note standard, commonly-used language]
+
+** Complex Parts (Need Careful Attention):**
+- [Identify 3-4 sections requiring expert interpretation]
+- [Note technical legal concepts or industry-specific terms]
+- [Highlight areas where interpretation could vary]
+
+##  Areas of Concern for Understanding
+
+### Unclear or Ambiguous Language
+- **Vague Terms:** [Words/phrases that could mean different things]
+- **Missing Definitions:** [Important terms that should be defined but aren't]
+- **Contradictory Clauses:** [Sections that might conflict with each other]
+
+### Potential Interpretation Issues
+- [Areas where different people might understand things differently]
+- [Clauses that could be argued both ways]
+- [Missing details that could cause disputes later]
+
+### What Might Be Missing
+- **Standard Clauses:** [Common legal provisions that seem absent]
+- **Important Details:** [Information that should be included but isn't]
+- **Definitions:** [Key terms that need clearer explanation]
+
+##  Recommendations for Better Understanding
+
+**Before Proceeding:**
+- [2-3 specific things to clarify with the other party]
+- [Areas where you should ask for more detail]
+- [When professional legal review might be wise]
+
+**Overall Assessment:**
+[One paragraph summary of whether this document is well-written, fair, and understandable, with any major concerns highlighted]
+
+Focus on helping the user understand both what's clear and what might need further clarification or professional review.
 """
 )
 
@@ -255,7 +513,7 @@ CONFIDENCE EVALUATION:
 
 PERFORMANCE METRICS:
 - Analysis completed in {execution_time:.2f} seconds using parallel processing
-- Target response time: <20 seconds ✅
+- Target response time: <20 seconds 
 
 Create a final report that:
 1. Starts with a clear executive summary

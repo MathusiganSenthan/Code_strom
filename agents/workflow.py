@@ -94,7 +94,7 @@ class ImprovedLegalAnalyzer:
     def __init__(self):
         # Enhanced model configuration with higher token limits for large documents
         self.pro_llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash-lite",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0.1,
             max_output_tokens=8192  # Increased for detailed analysis
@@ -1277,6 +1277,111 @@ class ImprovedLegalAnalyzer:
                 "fallback_used": True
             }
 
+    def _update_summary_metrics(self, summary: Dict[str, Any], risk: Dict[str, Any], 
+                               highlights: Dict[str, Any], confidence: Dict[str, Any]) -> Dict[str, Any]:
+        """Update summary metrics based on actual analysis results."""
+        try:
+            # Extract parsed data safely
+            summary_data = summary.get("parsed", summary) if isinstance(summary, dict) else summary
+            risk_data = risk.get("parsed", risk) if isinstance(risk, dict) else risk
+            highlights_data = highlights.get("parsed", highlights) if isinstance(highlights, dict) else highlights
+            confidence_data = confidence.get("parsed", confidence) if isinstance(confidence, dict) else confidence
+            
+            # Extract metrics with safe defaults
+            current_metrics = getattr(summary_data, 'metrics', {}) if hasattr(summary_data, 'metrics') else summary_data.get('metrics', {})
+            
+            # Update risk score from actual risk analysis
+            risk_score = 5  # default
+            if hasattr(risk_data, 'risk_score'):
+                risk_score = getattr(risk_data, 'risk_score', 5)
+            elif isinstance(risk_data, dict) and 'risk_score' in risk_data:
+                risk_score = risk_data.get('risk_score', 5)
+            elif hasattr(risk_data, 'overall_risk_level'):
+                # Convert risk level to score
+                risk_level = getattr(risk_data, 'overall_risk_level', 'medium').lower()
+                risk_score_mapping = {'low': 3, 'medium': 5, 'high': 8, 'critical': 9}
+                risk_score = risk_score_mapping.get(risk_level, 5)
+            
+            # Update AI confidence from actual confidence analysis
+            ai_confidence = 75  # default
+            if hasattr(confidence_data, 'overall_confidence'):
+                ai_confidence = int(getattr(confidence_data, 'overall_confidence', 75))
+            elif isinstance(confidence_data, dict) and 'overall_confidence' in confidence_data:
+                ai_confidence = int(confidence_data.get('overall_confidence', 75))
+            
+            # Calculate compliance score based on risk factors
+            compliance_score = max(10, 100 - (risk_score * 8))  # Inverse relationship with risk
+            
+            # Count actual obligations and deadlines
+            obligations_count = 0
+            deadlines_count = 0
+            critical_issues_count = 0
+            
+            if hasattr(highlights_data, 'financial_obligations'):
+                obligations = getattr(highlights_data, 'financial_obligations', [])
+                obligations_count = len(obligations) if isinstance(obligations, list) else 0
+            elif isinstance(highlights_data, dict) and 'financial_obligations' in highlights_data:
+                obligations = highlights_data.get('financial_obligations', [])
+                obligations_count = len(obligations) if isinstance(obligations, list) else 0
+                
+            if hasattr(highlights_data, 'critical_deadlines'):
+                deadlines = getattr(highlights_data, 'critical_deadlines', [])
+                deadlines_count = len(deadlines) if isinstance(deadlines, list) else 0
+            elif isinstance(highlights_data, dict) and 'critical_deadlines' in highlights_data:
+                deadlines = highlights_data.get('critical_deadlines', [])
+                deadlines_count = len(deadlines) if isinstance(deadlines, list) else 0
+            
+            # Count critical issues from risk analysis
+            if hasattr(risk_data, 'critical_risks'):
+                critical_risks = getattr(risk_data, 'critical_risks', [])
+                critical_issues_count = len(critical_risks) if isinstance(critical_risks, list) else 0
+            elif isinstance(risk_data, dict) and 'critical_risks' in risk_data:
+                critical_risks = risk_data.get('critical_risks', [])
+                critical_issues_count = len(critical_risks) if isinstance(critical_risks, list) else 0
+            elif hasattr(risk_data, 'risks'):
+                # Filter high-severity risks as critical issues
+                risks = getattr(risk_data, 'risks', [])
+                if isinstance(risks, list):
+                    critical_issues_count = len([r for r in risks if getattr(r, 'severity', '').lower() in ['high', 'critical']])
+            elif isinstance(risk_data, dict) and 'risks' in risk_data:
+                risks = risk_data.get('risks', [])
+                if isinstance(risks, list):
+                    critical_issues_count = len([r for r in risks if r.get('severity', '').lower() in ['high', 'critical']])
+            
+            logger.info(f"📊 Metrics calculation: obligations={obligations_count}, deadlines={deadlines_count}, critical_issues={critical_issues_count}, risk_score={risk_score}")
+            
+            # Update metrics with correct field names that match frontend expectations
+            updated_metrics = {
+                'ai_confidence': ai_confidence,
+                'risk_score': risk_score,
+                'compliance_score': compliance_score,
+                'critical_issues': critical_issues_count,  # Use actual critical issues count
+                'total_obligations': obligations_count,  # Map obligations count to total_obligations
+                'pages_analyzed': current_metrics.get('pages_analyzed', 1),
+                'processing_time': current_metrics.get('processing_time', '< 1 min')
+            }
+            
+            # Update the summary object
+            if isinstance(summary, dict):
+                if 'parsed' in summary and hasattr(summary['parsed'], 'metrics'):
+                    summary['parsed'].metrics = updated_metrics
+                elif 'parsed' in summary and isinstance(summary['parsed'], dict):
+                    summary['parsed']['metrics'] = updated_metrics
+                elif 'metrics' in summary:
+                    summary['metrics'] = updated_metrics
+                else:
+                    summary['metrics'] = updated_metrics
+            elif hasattr(summary, 'metrics'):
+                summary.metrics = updated_metrics
+            
+            logger.info(f"✅ Updated summary metrics: risk_score={risk_score}, ai_confidence={ai_confidence}, obligations={obligations_count}, deadlines={deadlines_count}")
+            
+            return summary
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to update summary metrics: {e}")
+            return summary
+
     def coordinator_agent(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Generate final coordinated output with improved performance metrics."""
         try:
@@ -1287,6 +1392,9 @@ class ImprovedLegalAnalyzer:
             confidence = state.get("confidence_result", {})
             errors = state.get("processing_errors", [])
             execution_time = state.get("execution_time", 0)
+            
+            # Update summary metrics based on actual analysis results
+            summary = self._update_summary_metrics(summary, risk, highlights, confidence)
             
             # Check if we have meaningful results - updated for new structure with better debugging
             logger.info(f"🔍 Coordinator debugging - summary type: {type(summary)}")
@@ -1371,6 +1479,7 @@ class ImprovedLegalAnalyzer:
                 final_output = result.content
             
             return {
+                "summary_result": summary,  # Include updated summary with metrics
                 "final_output": final_output,
                 "execution_metrics": {
                     "parallel_execution_time": execution_time,
