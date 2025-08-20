@@ -75,18 +75,94 @@ class SimpleTextSplitter:
         return all_chunks
 
 class SimpleEmbeddingService:
-    """Simplified embedding service"""
+    """Simplified embedding service with fallback capability"""
     
     def __init__(self):
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=os.getenv("GOOGLE_API_KEY"),
-            task_type="retrieval_document"
-        )
+        self.use_google_embeddings = True
+        try:
+            self.embeddings = GoogleGenerativeAIEmbeddings(
+                model="models/text-embedding-004",
+                google_api_key=os.getenv("GOOGLE_API_KEY"),
+                task_type="retrieval_document"
+            )
+            # Test the connection
+            self.embeddings.embed_query("test")
+            print("✅ Google embeddings initialized successfully")
+        except Exception as e:
+            print(f"⚠️ Google embeddings failed, using fallback: {e}")
+            self.use_google_embeddings = False
+            self.embeddings = None
+            
         self.text_splitter = SimpleTextSplitter(
             chunk_size=1000,
             chunk_overlap=200
         )
+    
+    def _fallback_embedding(self, text: str) -> List[float]:
+        """Simple fallback embedding using basic text features"""
+        import hashlib
+        
+        # Create a simple hash-based embedding
+        text_lower = text.lower()
+        
+        # Basic features
+        features = []
+        
+        # Character frequency features (26 letters)
+        char_freq = [0] * 26
+        for char in text_lower:
+            if 'a' <= char <= 'z':
+                char_freq[ord(char) - ord('a')] += 1
+        
+        # Normalize by text length
+        text_len = len(text_lower) or 1
+        char_freq = [freq / text_len for freq in char_freq]
+        features.extend(char_freq)
+        
+        # Word length statistics
+        words = text_lower.split()
+        if words:
+            avg_word_len = sum(len(word) for word in words) / len(words)
+            max_word_len = max(len(word) for word in words)
+            unique_words = len(set(words))
+            features.extend([avg_word_len / 10, max_word_len / 20, unique_words / len(words)])
+        else:
+            features.extend([0.0, 0.0, 0.0])
+        
+        # Punctuation features
+        punctuation_count = sum(1 for char in text if char in '.,!?;:')
+        features.append(punctuation_count / text_len)
+        
+        # Extend to fixed size (768 to match typical embedding dimensions)
+        while len(features) < 768:
+            # Use hash-based features to fill remaining dimensions
+            hash_input = f"{text_lower}_{len(features)}"
+            hash_val = int(hashlib.md5(hash_input.encode()).hexdigest(), 16) % 1000
+            features.append(hash_val / 1000.0)
+        
+        return features[:768]  # Ensure exactly 768 dimensions
+    
+    def embed_query(self, text: str) -> List[float]:
+        """Generate embedding for a query"""
+        if self.use_google_embeddings and self.embeddings:
+            try:
+                return self.embeddings.embed_query(text)
+            except Exception as e:
+                print(f"⚠️ Google embedding failed, using fallback: {e}")
+                return self._fallback_embedding(text)
+        else:
+            return self._fallback_embedding(text)
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for multiple documents"""
+        if self.use_google_embeddings and self.embeddings:
+            try:
+                return self.embeddings.embed_documents(texts)
+            except Exception as e:
+                print(f"⚠️ Google embeddings failed, using fallback: {e}")
+                return [self._fallback_embedding(text) for text in texts]
+        else:
+            return [self._fallback_embedding(text) for text in texts]
     
     def process_documents(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Process documents by splitting and generating embeddings"""
@@ -101,9 +177,9 @@ class SimpleEmbeddingService:
             # Extract text for embedding
             texts = [chunk['content'] for chunk in chunks]
             
-            # Generate embeddings
+            # Generate embeddings using the enhanced method with fallback
             print(f"🔄 Generating embeddings for {len(texts)} chunks...")
-            embeddings = self.embeddings.embed_documents(texts)
+            embeddings = self.embed_documents(texts)
             
             # Add embeddings to chunks
             for chunk, embedding in zip(chunks, embeddings):
@@ -124,16 +200,13 @@ class SimpleEmbeddingService:
                     chunk['embedding'] = None
                     chunk['embedding_dim'] = 0
                 return chunks
-            except:
+            except Exception as e2:
+                print(f"❌ Failed to return chunks without embeddings: {e2}")
                 return []
     
     def generate_query_embedding(self, query: str) -> Optional[List[float]]:
-        """Generate embedding for a search query"""
-        try:
-            return self.embeddings.embed_query(query)
-        except Exception as e:
-            print(f"Error generating query embedding: {e}")
-            return None
+        """Generate embedding for a search query - DEPRECATED, use embed_query instead"""
+        return self.embed_query(query)
     
     def calculate_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Calculate cosine similarity between two vectors"""
